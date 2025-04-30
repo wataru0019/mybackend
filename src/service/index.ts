@@ -16,3 +16,22 @@ export async function getAiResponse(apikey: string) {
     const result = await chain.invoke({})
     return { content: result }
 }
+
+export async function getAiStream(apikey: string) {
+    const llm = new ChatAnthropic({
+        model: "claude-3-5-haiku-20241022",
+        apiKey: apikey,
+        temperature: 0.7,
+    })
+    const prompt = ChatPromptTemplate.fromMessages([
+        ["user", "What is the capital of France?"]
+    ])
+    const parser = new StringOutputParser()
+    const chain = prompt.pipe(llm).pipe(parser)
+    const result = await chain.stream({})
+    console.log(result)
+    for await (const chunk of result) {
+        console.log(chunk)
+        return chunk
+    }
+}
