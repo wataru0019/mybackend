@@ -1,12 +1,14 @@
 import { Hono } from "hono";
-import { getAiResponse } from "../service";
+import { getAiResponse, agent } from "../service";
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatPromptTemplate } from '@langchain/core/prompts'
 import { StringOutputParser } from '@langchain/core/output_parsers'
+import { HumanMessage } from "@langchain/core/messages";
 
 // Cloudflare Workers の型定義
 type Bindings = {
     ANTHROPIC_API_KEY: string
+    OPENAI_API_KEY: string
     DATABASE_URL: string
   }
 
@@ -68,5 +70,39 @@ app.post('/stream', async (c) => {
       },
   });
 });
+
+app.get('/agent', async (c) => {
+    const instance = await agent(c.env.OPENAI_API_KEY);
+
+    const stream = new ReadableStream({
+        async start(controller) {
+            try {
+                const result = await instance.stream(
+                    { messages: new HumanMessage("お腹すいたよ") },
+                    { streamMode: "messages" }
+                );
+                for await (const chunk of result) {
+                    //   controller.enqueue(new TextEncoder().encode(`content: ${JSON.stringify({ content: chunk })}\n\n`));
+                    console.log(chunk[0].content)
+                    controller.enqueue(new TextEncoder().encode(chunk[0].content));
+                }
+                  
+                  // ストリーム終了
+                controller.enqueue(new TextEncoder().encode(''));
+                controller.close();
+            } catch (error) {
+                controller.error(error);
+            }
+        }
+    });
+
+    return new Response(stream, {
+        headers: {
+            'Content-Type': 'text/event-stream; charset=utf-8',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        }
+    });
+})
 
 export default app;
