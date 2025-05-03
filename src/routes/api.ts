@@ -24,7 +24,8 @@ app.post("/chat", async (c) => {
     return c.json(res);
 });
 
-app.get('/stream', async (c) => {
+app.post('/stream', async (c) => {
+    const body = await c.req.json();
   // ストリーミングレスポンスを作成
   const stream = new ReadableStream({
       async start(controller) {
@@ -36,7 +37,7 @@ app.get('/stream', async (c) => {
               });
               
               const prompt = ChatPromptTemplate.fromMessages([
-                  ["user", "なぜ空が青いのかを説明せよ"]
+                  ["user", body]
               ]);
               
               const parser = new StringOutputParser();
@@ -45,7 +46,7 @@ app.get('/stream', async (c) => {
               
               // 各チャンクをストリームに送信
               for await (const chunk of result) {
-                  // controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+                //   controller.enqueue(new TextEncoder().encode(`content: ${JSON.stringify({ content: chunk })}\n\n`));
                   controller.enqueue(new TextEncoder().encode(chunk));
               }
               
