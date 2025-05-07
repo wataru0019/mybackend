@@ -111,12 +111,12 @@ app.get('/agent', async (c) => {
 
 app.post('/agent/memory', async (c) => {
     const body = await c.req.json();
-    console.log(body)
+    // console.log(body)
     const message = body.messages
     const chat_id = body.chatId
-    const thread_id = chat_id === 0 ? "10" : chat_id
-    console.log("thread_id:" + thread_id)
-    console.log("message:" + message)
+    const thread_id = chat_id === 0 ? "0" : chat_id
+    // console.log("thread_id:" + thread_id)
+    // console.log("message:" + message)
     const instance = await superAgent(c.env.OPENAI_API_KEY, c.env.SUPABASE_URL, c.env.SUPABASE_KEY, thread_id);
     const config = { configurable: { thread_id: thread_id } };
 

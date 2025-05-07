@@ -12,18 +12,25 @@ import {
     StateGraph,
   } from "@langchain/langgraph";
 
-import { insertMessage, readMessages, updateMessage } from "./crud";
+import { insertMessage, readMessages, updateMessage, readThreadId } from "./crud";
 import { convertMessages } from "./langchain_messages";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
 export async function superAgent(openAiApikey: string, supabaseUrl: string, supabaseKey: string, chat_id: string) {
 
-    const thread_id = chat_id
+    let thread_id = chat_id
+    const new_thread_id = await readThreadId(supabaseUrl, supabaseKey)
+    if (thread_id === "0") {
+        thread_id = new_thread_id
+    } else {
+        thread_id = chat_id
+    }
+    
 
     async function callModel(state: typeof MessagesAnnotation.State) {
         const read_messages = await readMessages(supabaseUrl, supabaseKey, thread_id)
-        console.log("read_messages", read_messages)
+        // console.log("read_messages", read_messages)
         if (read_messages.length) {
             const past_messages = convertMessages(read_messages[0].messages)
             const new_messages = [...past_messages, ...state.messages]
