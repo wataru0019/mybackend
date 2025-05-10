@@ -1,7 +1,6 @@
 import { ChatAnthropic } from "@langchain/anthropic";
 import { ChatOpenAI } from "@langchain/openai";
 import { MemorySaver } from "@langchain/langgraph";
-import { HumanMessage } from "@langchain/core/messages";
 import { ToolNode } from "@langchain/langgraph/prebuilt"
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
@@ -12,21 +11,14 @@ import {
     StateGraph,
   } from "@langchain/langgraph";
 
-import { insertMessage, readMessages, updateMessage, readThreadId } from "./crud";
+import { insertMessage, readMessages, updateMessage } from "./crud";
 import { convertMessages } from "./langchain_messages";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
-export async function superAgent(openAiApikey: string, supabaseUrl: string, supabaseKey: string, chat_id: string) {
+export async function superAgent(openAiApikey: string, supabaseUrl: string, supabaseKey: string, chat_id: string, user_id: string) {
 
     let thread_id = chat_id
-    const new_thread_id = await readThreadId(supabaseUrl, supabaseKey)
-    if (thread_id === "0") {
-        thread_id = new_thread_id
-    } else {
-        thread_id = chat_id
-    }
-    
 
     async function callModel(state: typeof MessagesAnnotation.State) {
         const read_messages = await readMessages(supabaseUrl, supabaseKey, thread_id)
@@ -102,7 +94,7 @@ export async function superAgent(openAiApikey: string, supabaseUrl: string, supa
         const parser = new StringOutputParser()
         const chain = prompt.pipe(llm).pipe(parser)
         const title = await chain.invoke({ content: content })
-        await insertMessage(supabaseUrl, supabaseKey, thread_id, messages, title)
+        await insertMessage(supabaseUrl, supabaseKey, thread_id, messages, title, user_id)
         return
     }
 

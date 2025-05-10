@@ -5,7 +5,7 @@ import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatPromptTemplate } from '@langchain/core/prompts'
 import { StringOutputParser } from '@langchain/core/output_parsers'
 import { HumanMessage } from "@langchain/core/messages";
-import { supabase } from "../service/supabase"
+import { readThreadId } from "../service/crud";
 
 // Cloudflare Workers の型定義
 type Bindings = {
@@ -87,7 +87,6 @@ app.get('/agent', async (c) => {
                 );
                 for await (const chunk of result) {
                     //   controller.enqueue(new TextEncoder().encode(`content: ${JSON.stringify({ content: chunk })}\n\n`));
-                    console.log(chunk[0].content)
                     controller.enqueue(new TextEncoder().encode(chunk[0].content));
                 }
                   
@@ -114,10 +113,11 @@ app.post('/agent/memory', async (c) => {
     // console.log(body)
     const message = body.messages
     const chat_id = body.chatId
-    const thread_id = chat_id === 0 ? "0" : chat_id
-    // console.log("thread_id:" + thread_id)
+    const user_id = body.userId
+    const nextChatId = await readThreadId(c.env.SUPABASE_URL, c.env.SUPABASE_KEY)
+    const thread_id = chat_id === 0 ? nextChatId : chat_id
     // console.log("message:" + message)
-    const instance = await superAgent(c.env.OPENAI_API_KEY, c.env.SUPABASE_URL, c.env.SUPABASE_KEY, thread_id);
+    const instance = await superAgent(c.env.OPENAI_API_KEY, c.env.SUPABASE_URL, c.env.SUPABASE_KEY, thread_id, user_id);
     const config = { configurable: { thread_id: thread_id } };
 
     const stream = new ReadableStream({
@@ -129,7 +129,6 @@ app.post('/agent/memory', async (c) => {
                 );
                 for await (const chunk of result) {
                     //   controller.enqueue(new TextEncoder().encode(`content: ${JSON.stringify({ content: chunk })}\n\n`));
-                    console.log(chunk[0].content)
                     controller.enqueue(new TextEncoder().encode(chunk[0].content));
                 }
                   
@@ -149,6 +148,11 @@ app.post('/agent/memory', async (c) => {
             'Connection': 'keep-alive'
         }
     });
+})
+
+app.get('/chatid', async (c) => {
+    const nextChatId = await readThreadId(c.env.SUPABASE_URL, c.env.SUPABASE_KEY)
+    return c.json({ chat_id: nextChatId })
 })
 
 export default app;

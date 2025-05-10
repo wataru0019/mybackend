@@ -1,13 +1,13 @@
 import { supabase } from "./supabase";
 
-export async function insertMessage(supabaseUrl: string, supabaseKey: string, chat_id: string, msgs: object[], title: string) {
+export async function insertMessage(supabaseUrl: string, supabaseKey: string, chat_id: string, msgs: object[], title: string, user_id: string) {
     const _supabase = supabase(supabaseUrl, supabaseKey);
     try {
         const { data, error } = await _supabase
             .from('messages')
             .insert([
                 {
-                    user_id: 1,
+                    user_id: user_id,
                     chat_id: chat_id,
                     messages: msgs,
                     chat_title: title,
@@ -54,9 +54,7 @@ export async function readThreadId(supabaseUrl: string, supabaseKey: string) {
         const { data, error } = await _supabase
             .from('messages')
             .select('id, chat_id')
-            .order('id', { ascending: true
-
-             })
+            .order('id', { ascending: true })
           
           if (error) {
             console.error('Error reading messages:', error);
